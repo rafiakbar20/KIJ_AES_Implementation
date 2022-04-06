@@ -1,72 +1,45 @@
-import random, sys
+from Crypto.PublicKey import RSA
+from Crypto.Cipher import PKCS1_OAEP
+import binascii
 import time
 
-LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
-def main():
-   message = ''
-   if len(sys.argv) > 1:
-      with open(sys.argv[1], 'r') as f:
-         message = f.read()
-   else:
-       filename = input("Enter your message: ")
-       with open(filename, 'r') as file:
-            message = file.read()
-   mode = input("E for Encrypt, D for Decrypt: ")
-   key = ''
-   
-   while checkKey(key) is False:
-      key = input("Enter 26 ALPHA key (leave blank for random key): ")
-      if key == '':
-         key = getRandomKey()
-      if checkKey(key) is False:
-	            print('There is an error in the key or symbol set.')
-   translated = translateMessage(message, key, mode)
-   print('Using key: %s' % (key))
-   
-   if len(sys.argv) > 1:
-       fileOut = 'enc.' + sys.argv[1]
-       with open(fileOut, 'w') as f:
-          f.write(translated)
-         
-       with open('fileOut.txt', 'w') as f:
-         f.write(translated)
-         
-       print('Success! File written to: %s' % (fileOut))
-   else:
-       print('Result: ' + translated)
-       newfile = input("Enter output file name : ")
-       with open(newfile, 'w') as f:
-           f.write(translated)
 
-# Store the key into list, sort it, convert back, compare to alphabet.
-def checkKey(key):
-   keyString = ''.join(sorted(list(key)))
-   return keyString == LETTERS
-def translateMessage(message, key, mode):
-   start = time.time()   
-   translated = ''
-   charsA = LETTERS
-   charsB = key
-   
-   # If decrypt mode is detected, swap A and B
-   if mode == 'D':
-      charsA, charsB = charsB, charsA
-   for symbol in message:
-      if symbol.upper() in charsA:
-         symIndex = charsA.find(symbol.upper())
-         if symbol.isupper():
-            translated += charsB[symIndex].upper()
-         else:
-            translated += charsB[symIndex].lower()
-      else:
-        translated += symbol
-   end = time.time()
-   print(end - start)
-   return translated
-def getRandomKey():
-   randomList = list(LETTERS)
-   random.shuffle(randomList)
-   return ''.join(randomList)
-if __name__ == '__main__':
-   main()
+keyPair = RSA.generate(3072)
 
+pubKey = keyPair.publickey()
+
+#print(f"Public key:  (n={hex(pubKey.n)}, e={hex(pubKey.e)})")
+pubKeyPEM = pubKey.exportKey()
+#print(pubKeyPEM.decode('ascii'))
+
+#print(f"Private key: (n={hex(pubKey.n)}, d={hex(keyPair.d)})")
+privKeyPEM = keyPair.exportKey()
+#print(privKeyPEM.decode('ascii'))
+
+filename = "rsafile.txt"
+readmsg = open(filename, "rb")
+msg = readmsg.read()
+readmsg.close()
+start = time.time() 
+
+# msg = b'Network Information Security'
+encryptor = PKCS1_OAEP.new(pubKey)
+encrypted = encryptor.encrypt(msg)
+print("Encrypted:", binascii.hexlify(encrypted))
+# print(type(encrypted))
+end = time.time()
+print(end - start)
+
+filename = "rsaencrypt1.txt"
+readmsg = open(filename, "wb")
+msg = readmsg.write(encrypted)
+readmsg.close()
+
+decryptor = PKCS1_OAEP.new(keyPair)
+decrypted = decryptor.decrypt(encrypted)
+print('Decrypted:', decrypted)
+
+filename = "rsadecrypt1.txt"
+readmsg = open(filename, "wb")
+msg = readmsg.write(decrypted)
+readmsg.close()
