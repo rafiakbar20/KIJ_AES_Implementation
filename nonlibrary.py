@@ -64,6 +64,7 @@ def translateMessage(message, key, mode):
    print(end - start)
    return translated
 
+
 def getRandomKey():
    randomList = list(LETTERS)
    random.shuffle(randomList)
